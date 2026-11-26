@@ -8,9 +8,10 @@ import javax.swing.*;
 import java.awt.*;
 
 public class CreateSessionDialog extends JDialog {
-    private JTextField titleField, skillField, scheduledAtField;
+    private JTextField titleField, skillField;
     private JTextArea descriptionArea;
     private JRadioButton offeringRadio, requestingRadio;
+    private JSpinner dateSpinner, timeSpinner, capacitySpinner;
     private final User currentUser;
     private final Session editingSession;
     private Session savedSession;
@@ -34,9 +35,28 @@ public class CreateSessionDialog extends JDialog {
 
         titleField = SwingUtils.createStyledTextField(20);
         skillField = SwingUtils.createStyledTextField(20);
-        scheduledAtField = SwingUtils.createStyledTextField(20);
-        scheduledAtField.setText(java.time.LocalDate.now().plusDays(1) + " 17:00");
         descriptionArea = SwingUtils.createStyledTextArea(4, 20);
+
+        // Date spinner (starting tomorrow)
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.add(java.util.Calendar.DAY_OF_MONTH, 1);
+        java.util.Date tomorrow = cal.getTime();
+        java.util.Date oneYearFromNow = new java.util.Date(tomorrow.getTime() + 365L * 24 * 60 * 60 * 1000);
+        
+        dateSpinner = new JSpinner(new SpinnerDateModel(tomorrow, tomorrow, oneYearFromNow, java.util.Calendar.DAY_OF_MONTH));
+        JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(dateSpinner, "yyyy-MM-dd");
+        dateSpinner.setEditor(dateEditor);
+        
+        // Time spinner
+        cal.setTime(tomorrow);
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 15);
+        cal.set(java.util.Calendar.MINUTE, 0);
+        timeSpinner = new JSpinner(new SpinnerDateModel(cal.getTime(), null, null, java.util.Calendar.HOUR_OF_DAY));
+        JSpinner.DateEditor timeEditor = new JSpinner.DateEditor(timeSpinner, "HH:mm");
+        timeSpinner.setEditor(timeEditor);
+        
+        // Capacity spinner
+        capacitySpinner = new JSpinner(new SpinnerNumberModel(10, 1, 100, 1));
 
         offeringRadio = new JRadioButton("Offer help", true);
         requestingRadio = new JRadioButton("Request help");
@@ -57,8 +77,25 @@ public class CreateSessionDialog extends JDialog {
         if (editingSession != null) {
             titleField.setText(editingSession.getTitle());
             skillField.setText(editingSession.getSkill());
-            scheduledAtField.setText(editingSession.getScheduledAt());
             descriptionArea.setText(editingSession.getDescription());
+            
+            // Parse existing scheduled time
+            try {
+                String[] parts = editingSession.getScheduledAt().split(" ");
+                if (parts.length == 2) {
+                    java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                    java.text.SimpleDateFormat timeFormat = new java.text.SimpleDateFormat("HH:mm");
+                    dateSpinner.setValue(dateFormat.parse(parts[0]));
+                    timeSpinner.setValue(timeFormat.parse(parts[1]));
+                }
+            } catch (Exception e) {
+                // Use default values if parsing fails
+            }
+            
+            if (editingSession.getMaxCapacity() > 0) {
+                capacitySpinner.setValue(editingSession.getMaxCapacity());
+            }
+            
             if ("requesting".equalsIgnoreCase(editingSession.getSessionType())) {
                 requestingRadio.setSelected(true);
             }
@@ -67,7 +104,9 @@ public class CreateSessionDialog extends JDialog {
         page.field("Session type", radioPanel);
         page.field("Session title *", titleField);
         page.field("Skill *", skillField);
-        page.field("Scheduled for", scheduledAtField);
+        page.field("Date *", dateSpinner);
+        page.field("Time *", timeSpinner);
+        page.field("Max participants", capacitySpinner);
         page.field("Description", new JScrollPane(descriptionArea));
 
         JButton cancelBtn = SwingUtils.createStyledButton("Cancel", SwingUtils.CARD);
@@ -88,15 +127,21 @@ public class CreateSessionDialog extends JDialog {
             return;
         }
 
+        // Format date and time
+        java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd");
+        java.text.SimpleDateFormat timeFormat = new java.text.SimpleDateFormat("HH:mm");
+        String scheduledAt = dateFormat.format(dateSpinner.getValue()) + " " + timeFormat.format(timeSpinner.getValue());
+
         Session s = new Session();
         if (editingSession != null) s.setId(editingSession.getId());
         s.setTutorId(currentUser.getId());
         s.setTitle(title);
         s.setSkill(skill);
-        s.setScheduledAt(scheduledAtField.getText().trim());
+        s.setScheduledAt(scheduledAt);
         s.setDescription(descriptionArea.getText().trim());
         s.setSessionType(offeringRadio.isSelected() ? "offering" : "requesting");
         s.setStatus("open");
+        s.setMaxCapacity((Integer) capacitySpinner.getValue());
 
         boolean ok = (editingSession == null) ? sessionDAO.createSession(s) : sessionDAO.updateSession(s);
         if (ok) {

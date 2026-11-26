@@ -1,6 +1,7 @@
 package com.skillswap.view;
 
 import com.skillswap.dao.BookingDAO;
+import com.skillswap.dao.RatingDAO;
 import com.skillswap.model.Booking;
 import com.skillswap.model.User;
 import com.skillswap.util.SwingUtils;
@@ -16,6 +17,7 @@ public class MyExchangesFrame extends JFrame {
     private final JButton rateBtn = SwingUtils.createStyledButton("Rate session", SwingUtils.PRIMARY_DARK);
     private List<Booking> completedBookings;
     private final BookingDAO bookingDAO = new BookingDAO();
+    private final RatingDAO ratingDAO = new RatingDAO();
 
     public MyExchangesFrame(User currentUser) {
         this.currentUser = currentUser;
@@ -56,9 +58,18 @@ public class MyExchangesFrame extends JFrame {
 
     private void updateRateAction() {
         int row = exchangeTable.getSelectedRow();
-        if (row < 0) { rateBtn.setEnabled(false); return; }
+        if (row < 0) { 
+            rateBtn.setEnabled(false); 
+            return; 
+        }
         Booking b = completedBookings.get(exchangeTable.convertRowIndexToModel(row));
-        rateBtn.setEnabled(b.getLearnerId() == currentUser.getId() && b.getRatingValue() == 0);
+        
+        // Check if current user has already rated
+        boolean isLearner = b.getLearnerId() == currentUser.getId();
+        boolean hasRated = isLearner ? b.isLearnerHasRated() : b.isTutorHasRated();
+        
+        rateBtn.setEnabled(!hasRated);
+        rateBtn.setText(hasRated ? "Already Rated" : "Rate Session");
     }
 
     private void openRateDialog() {
@@ -68,11 +79,16 @@ public class MyExchangesFrame extends JFrame {
             return;
         }
         Booking selected = completedBookings.get(exchangeTable.convertRowIndexToModel(row));
-        if (selected.getLearnerId() != currentUser.getId()) return;
-        if (selected.getRatingValue() > 0) {
-            SwingUtils.showError(this, "This session has already been rated.");
+        
+        // Check if already rated
+        boolean isLearner = selected.getLearnerId() == currentUser.getId();
+        boolean hasRated = isLearner ? selected.isLearnerHasRated() : selected.isTutorHasRated();
+        
+        if (hasRated) {
+            SwingUtils.showError(this, "You have already rated this session.");
             return;
         }
-        new RateSessionDialog(this, selected, this::loadExchanges).setVisible(true);
+        
+        new RateSessionDialog(this, selected, currentUser, this::loadExchanges).setVisible(true);
     }
 }

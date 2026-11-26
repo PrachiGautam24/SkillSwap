@@ -1,7 +1,9 @@
 package com.skillswap.view;
 
 import com.skillswap.dao.BookingDAO;
+import com.skillswap.dao.MessageDAO;
 import com.skillswap.model.Booking;
+import com.skillswap.model.Message;
 import com.skillswap.model.Session;
 import com.skillswap.util.SwingUtils;
 import javax.swing.*;
@@ -18,6 +20,7 @@ public class SessionBookingsDialog extends JDialog {
     private final JButton cancelBtn = SwingUtils.createStyledButton("Cancel booking", SwingUtils.DANGER);
     private List<Booking> bookingList;
     private final BookingDAO bookingDAO = new BookingDAO();
+    private final MessageDAO messageDAO = new MessageDAO();
 
     public SessionBookingsDialog(Frame owner, Session session, Runnable onUpdate) {
         super(owner, "Bookings for: " + session.getTitle(), true);
@@ -77,11 +80,33 @@ public class SessionBookingsDialog extends JDialog {
         }
         Booking b = bookingList.get(bookingTable.convertRowIndexToModel(row));
         if (bookingDAO.updateBookingStatus(b.getId(), status)) {
+            // Send auto-message to learner
+            String messageContent = generateBookingMessage(status, session.getTitle());
+            Message msg = new Message();
+            msg.setSenderId(session.getTutorId());
+            msg.setReceiverId(b.getLearnerId());
+            msg.setContent(messageContent);
+            messageDAO.sendMessage(msg);
+            
+            SwingUtils.showSuccess(this, "Booking " + status + "! Message sent to " + b.getLearnerName() + ".");
             loadBookings();
             if (onUpdate != null) onUpdate.run();
         } else {
             loadBookings();
             SwingUtils.showError(this, "Could not update this booking. Check its current status and try again.");
+        }
+    }
+    
+    private String generateBookingMessage(String status, String title) {
+        switch (status) {
+            case "confirmed":
+                return "Great news! Your booking for '" + title + "' has been confirmed! Let's discuss the details in Messages.";
+            case "cancelled":
+                return "Sorry, your booking for '" + title + "' was declined. Feel free to book other sessions or message me for more information.";
+            case "completed":
+                return "The session '" + title + "' has been marked as completed. Hope it was helpful! Please consider leaving a rating.";
+            default:
+                return "Booking status updated for '" + title + "'.";
         }
     }
 }

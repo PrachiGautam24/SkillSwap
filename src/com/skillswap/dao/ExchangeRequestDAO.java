@@ -78,6 +78,25 @@ public class ExchangeRequestDAO {
             return false;
         }
     }
+    
+    /**
+     * Get count of pending incoming requests for a user
+     */
+    public int getPendingIncomingCount(int userId) {
+        String sql = "SELECT COUNT(*) FROM exchange_requests WHERE to_user_id = ? AND status = 'pending'";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
 
     private ExchangeRequest mapRow(ResultSet rs) throws SQLException {
         ExchangeRequest er = new ExchangeRequest();

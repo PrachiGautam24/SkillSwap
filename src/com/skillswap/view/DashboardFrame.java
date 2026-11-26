@@ -30,6 +30,10 @@ public class DashboardFrame extends JFrame {
     private final BookingDAO bookingDAO = new BookingDAO();
     private final UserDAO userDAO = new UserDAO();
     private final AnnouncementDAO announcementDAO = new AnnouncementDAO();
+    private final ExchangeRequestDAO exchangeRequestDAO = new ExchangeRequestDAO();
+    private final MessageDAO messageDAO = new MessageDAO();
+    
+    private JButton sessionsNavBtn, messagesNavBtn, requestsNavBtn;
 
     public DashboardFrame(User user) {
         this.currentUser = user;
@@ -136,11 +140,13 @@ public class DashboardFrame extends JFrame {
         addNavButton(sidebar, "Dashboard", e -> refreshDashboardData());
         addNavButton(sidebar, "Find Matches", e -> openWindow(FindMatchesFrame.class,
                 () -> new FindMatchesFrame(currentUser, this::sessionsChanged), FindMatchesFrame::loadMatches));
-        addNavButton(sidebar, "My Requests", e -> openWindow(MyRequestsFrame.class,
+        messagesNavBtn = addNavButton(sidebar, "Messages", e -> openWindow(MessagesFrame.class,
+                () -> new MessagesFrame(currentUser), MessagesFrame::loadConversations));
+        requestsNavBtn = addNavButton(sidebar, "My Requests", e -> openWindow(MyRequestsFrame.class,
                 () -> new MyRequestsFrame(currentUser), MyRequestsFrame::loadTables));
         addNavButton(sidebar, "My Exchanges", e -> openWindow(MyExchangesFrame.class,
                 () -> new MyExchangesFrame(currentUser), MyExchangesFrame::loadExchanges));
-        addNavButton(sidebar, "My Sessions", e -> openSessions());
+        sessionsNavBtn = addNavButton(sidebar, "My Sessions", e -> openSessions());
         addNavButton(sidebar, "Leaderboard", e -> openWindow(LeaderboardFrame.class,
                 LeaderboardFrame::new, LeaderboardFrame::loadLeaderboard));
 
@@ -156,7 +162,7 @@ public class DashboardFrame extends JFrame {
         add(sidebar, BorderLayout.WEST);
     }
 
-    private void addNavButton(JPanel sidebar, String text, java.awt.event.ActionListener action) {
+    private JButton addNavButton(JPanel sidebar, String text, java.awt.event.ActionListener action) {
         JButton btn = SwingUtils.createStyledButton(text, "Dashboard".equals(text) ? SwingUtils.PRIMARY_DARK : SwingUtils.CARD);
         btn.setFont(SwingUtils.BOLD_FONT);
         btn.setForeground(SwingUtils.TEXT_PRIMARY);
@@ -169,6 +175,29 @@ public class DashboardFrame extends JFrame {
         btn.setAlignmentX(Component.LEFT_ALIGNMENT);
         sidebar.add(btn);
         sidebar.add(Box.createVerticalStrut(5));
+        return btn;
+    }
+    
+    private void updateNotificationBadges() {
+        // Update My Sessions badge
+        int pendingBookings = bookingDAO.getPendingHostBookings(currentUser.getId());
+        updateButtonText(sessionsNavBtn, "My Sessions", pendingBookings);
+        
+        // Update Messages badge
+        int unreadMessages = messageDAO.getUnreadCount(currentUser.getId());
+        updateButtonText(messagesNavBtn, "Messages", unreadMessages);
+        
+        // Update My Requests badge
+        int pendingRequests = exchangeRequestDAO.getPendingIncomingCount(currentUser.getId());
+        updateButtonText(requestsNavBtn, "My Requests", pendingRequests);
+    }
+    
+    private void updateButtonText(JButton button, String baseName, int count) {
+        if (count > 0) {
+            button.setText(baseName + " [" + count + "]");
+        } else {
+            button.setText(baseName);
+        }
     }
 
     private void setupCenterPanel() {
@@ -296,6 +325,9 @@ public class DashboardFrame extends JFrame {
         announcements = announcementDAO.getRecentAnnouncements(10);
         announcementIndex = Math.min(announcementIndex, Math.max(0, announcements.size() - 1));
         showAnnouncement();
+        
+        // Update notification badges
+        updateNotificationBadges();
     }
 
     private void showAnnouncement() {

@@ -13,6 +13,7 @@ public class Session {
     // Extra helper fields for UI joins
     private String tutorName;
     private int bookingCount;
+    private int maxCapacity = 10;
 
     public Session() {}
 
@@ -36,4 +37,6 @@ public class Session {
     public void setTutorName(String tutorName) { this.tutorName = tutorName; }
     public int getBookingCount() { return bookingCount; }
     public void setBookingCount(int bookingCount) { this.bookingCount = bookingCount; }
+    public int getMaxCapacity() { return maxCapacity; }
+    public void setMaxCapacity(int maxCapacity) { this.maxCapacity = maxCapacity; }
 }

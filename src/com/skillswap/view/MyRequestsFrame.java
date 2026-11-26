@@ -1,7 +1,10 @@
 package com.skillswap.view;
 
 import com.skillswap.dao.ExchangeRequestDAO;
+import com.skillswap.dao.MessageDAO;
+import com.skillswap.dao.UserDAO;
 import com.skillswap.model.ExchangeRequest;
+import com.skillswap.model.Message;
 import com.skillswap.model.User;
 import com.skillswap.util.SwingUtils;
 import javax.swing.*;
@@ -15,6 +18,8 @@ public class MyRequestsFrame extends JFrame {
     private JTable incomingTable, sentTable;
     private List<ExchangeRequest> incomingList, sentList;
     private final ExchangeRequestDAO requestDAO = new ExchangeRequestDAO();
+    private final MessageDAO messageDAO = new MessageDAO();
+    private final UserDAO userDAO = new UserDAO();
 
     public MyRequestsFrame(User currentUser) {
         this.currentUser = currentUser;
@@ -33,19 +38,25 @@ public class MyRequestsFrame extends JFrame {
 
         JPanel inBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
         inBtns.setBackground(SwingUtils.CARD);
+        JButton messageBtn = SwingUtils.createStyledButton("Message Sender", SwingUtils.CARD);
         JButton acceptBtn = SwingUtils.createStyledButton("Accept", SwingUtils.SUCCESS);
         JButton rejectBtn = SwingUtils.createStyledButton("Reject", SwingUtils.DANGER);
 
+        messageBtn.addActionListener(e -> messageSelectedUser(true));
         acceptBtn.addActionListener(e -> updateSelectedStatus("accepted"));
         rejectBtn.addActionListener(e -> updateSelectedStatus("rejected"));
+        messageBtn.setEnabled(false);
         acceptBtn.setEnabled(false);
         rejectBtn.setEnabled(false);
         incomingTable.getSelectionModel().addListSelectionListener(e -> {
             int selected = incomingTable.getSelectedRow();
-            boolean pending = selected >= 0 && "pending".equals(incomingList.get(selected).getStatus());
+            boolean validSelection = selected >= 0 && selected < incomingList.size();
+            messageBtn.setEnabled(validSelection);
+            boolean pending = validSelection && "pending".equals(incomingList.get(selected).getStatus());
             acceptBtn.setEnabled(pending);
             rejectBtn.setEnabled(pending);
         });
+        inBtns.add(messageBtn);
         inBtns.add(acceptBtn);
         inBtns.add(rejectBtn);
         incomingPanel.add(inBtns, BorderLayout.SOUTH);
@@ -54,6 +65,17 @@ public class MyRequestsFrame extends JFrame {
         sentPanel.setBackground(SwingUtils.BACKGROUND);
         sentTable = SwingUtils.createTable("Requests you send from Find Matches will appear here.");
         sentPanel.add(new JScrollPane(sentTable), BorderLayout.CENTER);
+        
+        JPanel sentBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        sentBtns.setBackground(SwingUtils.CARD);
+        JButton messageSentBtn = SwingUtils.createStyledButton("Message Recipient", SwingUtils.CARD);
+        messageSentBtn.setEnabled(false);
+        messageSentBtn.addActionListener(e -> messageSelectedUser(false));
+        sentTable.getSelectionModel().addListSelectionListener(e -> {
+            messageSentBtn.setEnabled(sentTable.getSelectedRow() >= 0);
+        });
+        sentBtns.add(messageSentBtn);
+        sentPanel.add(sentBtns, BorderLayout.SOUTH);
 
         tabs.addTab("Incoming Requests", incomingPanel);
         tabs.addTab("Sent Requests", sentPanel);
@@ -93,12 +115,99 @@ public class MyRequestsFrame extends JFrame {
             return;
         }
         ExchangeRequest req = incomingList.get(row);
+        
         if (requestDAO.updateRequestStatus(req.getId(), status)) {
-            SwingUtils.showSuccess(this, "Request marked as " + status + ".");
+            if ("accepted".equals(status)) {
+                // Automatically send a notification message
+                Message notification = new Message();
+                notification.setSenderId(currentUser.getId());
+                notification.setReceiverId(req.getFromUserId());
+                notification.setExchangeRequestId(req.getId());
+                notification.setContent("Great news! I've accepted your exchange request. Let's discuss when we can meet!");
+                messageDAO.sendMessage(notification);
+                
+                SwingUtils.showSuccess(this, "Request accepted! A message has been sent. Check Messages to coordinate.");
+            } else {
+                SwingUtils.showSuccess(this, "Request marked as " + status + ".");
+            }
             loadTables();
         } else {
             loadTables();
             SwingUtils.showError(this, "Could not change this request. Check its current status.");
         }
+    }
+    
+    private void messageSelectedUser(boolean isIncoming) {
+        JTable table = isIncoming ? incomingTable : sentTable;
+        List<ExchangeRequest> list = isIncoming ? incomingList : sentList;
+        
+        int row = table.getSelectedRow();
+        if (row < 0 || row >= list.size()) {
+            SwingUtils.showError(this, "Please select a request first.");
+            return;
+        }
+        
+        ExchangeRequest req = list.get(row);
+        int otherUserId = isIncoming ? req.getFromUserId() : req.getToUserId();
+        User otherUser = userDAO.getById(otherUserId);
+        
+        if (otherUser == null) {
+            SwingUtils.showError(this, "Could not load user information.");
+            return;
+        }
+        
+        // Open quick message dialog
+        JDialog dialog = new JDialog(this, "Message " + otherUser.getName(), true);
+        FormPage page = new FormPage("Send a message");
+        
+        JTextArea messageArea = SwingUtils.createStyledTextArea(5, 30);
+        messageArea.setText("Hi " + otherUser.getName() + ",\n\nRegarding the exchange request for " + 
+                          req.getSkillOffering() + " ↔ " + req.getSkillRequesting() + "...");
+        
+        page.section("About this exchange");
+        page.detail("Peer", otherUser.getName());
+        page.detail("Exchange", req.getSkillOffering() + " ↔ " + req.getSkillRequesting());
+        page.detail("Status", req.getStatus().toUpperCase());
+        page.field("Your message", new JScrollPane(messageArea));
+        
+        JButton cancel = SwingUtils.createStyledButton("Cancel", SwingUtils.CARD);
+        JButton send = SwingUtils.createStyledButton("Send Message", SwingUtils.PRIMARY_DARK);
+        JButton openChat = SwingUtils.createStyledButton("Open Full Chat", SwingUtils.SUCCESS);
+        
+        cancel.addActionListener(e -> dialog.dispose());
+        send.addActionListener(e -> {
+            String content = messageArea.getText().trim();
+            if (content.isEmpty()) {
+                SwingUtils.showError(dialog, "Message cannot be empty");
+                return;
+            }
+            
+            Message msg = new Message();
+            msg.setSenderId(currentUser.getId());
+            msg.setReceiverId(otherUserId);
+            msg.setExchangeRequestId(req.getId());
+            msg.setContent(content);
+            
+            if (messageDAO.sendMessage(msg)) {
+                SwingUtils.showSuccess(dialog, "Message sent to " + otherUser.getName() + "!");
+                dialog.dispose();
+            } else {
+                SwingUtils.showError(dialog, "Failed to send message. Please try again.");
+            }
+        });
+        
+        openChat.addActionListener(e -> {
+            dialog.dispose();
+            MessagesFrame messagesFrame = new MessagesFrame(currentUser);
+            messagesFrame.setVisible(true);
+        });
+        
+        page.actions(cancel, send, openChat);
+        dialog.setContentPane(page);
+        dialog.getRootPane().setDefaultButton(send);
+        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        dialog.setSize(600, 500);
+        SwingUtils.centerFrame(dialog);
+        dialog.setVisible(true);
     }
 }

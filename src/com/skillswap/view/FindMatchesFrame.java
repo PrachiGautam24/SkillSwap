@@ -211,7 +211,7 @@ public class FindMatchesFrame extends JFrame {
             onBooked.run();
             SwingUtils.showSuccess(this, chosen.getTitle() + " is pending confirmation. Track it in My Sessions.");
         } else {
-            SwingUtils.showError(this, "Booking could not be saved. Check My Sessions and try again if needed.");
+            SwingUtils.showError(this, "Booking could not be saved. The session may be full, in the past, or you've already booked it. Check My Sessions.");
         }
     }
 

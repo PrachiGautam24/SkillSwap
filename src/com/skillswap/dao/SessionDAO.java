@@ -8,7 +8,7 @@ import java.util.List;
 public class SessionDAO {
 
     public boolean createSession(Session session) {
-        String sql = "INSERT INTO sessions (tutor_id, title, description, skill, scheduled_at, status, session_type) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO sessions (tutor_id, title, description, skill, scheduled_at, status, session_type, max_capacity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, session.getTutorId());
@@ -18,6 +18,7 @@ public class SessionDAO {
             ps.setString(5, session.getScheduledAt());
             ps.setString(6, session.getStatus() != null ? session.getStatus() : "open");
             ps.setString(7, session.getSessionType());
+            ps.setInt(8, session.getMaxCapacity() > 0 ? session.getMaxCapacity() : 10);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -83,7 +84,7 @@ public class SessionDAO {
     }
 
     public boolean updateSession(Session session) {
-        String sql = "UPDATE sessions SET title=?, description=?, skill=?, scheduled_at=?, session_type=? WHERE id=?";
+        String sql = "UPDATE sessions SET title=?, description=?, skill=?, scheduled_at=?, session_type=?, max_capacity=? WHERE id=?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, session.getTitle());
@@ -91,7 +92,8 @@ public class SessionDAO {
             ps.setString(3, session.getSkill());
             ps.setString(4, session.getScheduledAt());
             ps.setString(5, session.getSessionType());
-            ps.setInt(6, session.getId());
+            ps.setInt(6, session.getMaxCapacity() > 0 ? session.getMaxCapacity() : 10);
+            ps.setInt(7, session.getId());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

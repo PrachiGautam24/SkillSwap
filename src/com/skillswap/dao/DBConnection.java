@@ -56,6 +56,7 @@ public class DBConnection {
             "scheduled_at VARCHAR(100), " +
             "status VARCHAR(30) DEFAULT 'open', " +
             "session_type VARCHAR(30) NOT NULL, " +
+            "max_capacity INT DEFAULT 10, " +
             "FOREIGN KEY (tutor_id) REFERENCES users(id) ON DELETE CASCADE)",
 
             "CREATE TABLE IF NOT EXISTS bookings (" +
@@ -72,6 +73,7 @@ public class DBConnection {
             "booking_id INT UNIQUE NOT NULL, " +
             "rating INT NOT NULL, " +
             "review TEXT, " +
+            "rated_by_learner BOOLEAN DEFAULT TRUE, " +
             "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
             "FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE)",
 
@@ -91,7 +93,19 @@ public class DBConnection {
             "id INT AUTO_INCREMENT PRIMARY KEY, " +
             "title VARCHAR(150) NOT NULL, " +
             "content TEXT NOT NULL, " +
-            "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+            "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+
+            "CREATE TABLE IF NOT EXISTS messages (" +
+            "id INT AUTO_INCREMENT PRIMARY KEY, " +
+            "sender_id INT NOT NULL, " +
+            "receiver_id INT NOT NULL, " +
+            "exchange_request_id INT, " +
+            "content TEXT NOT NULL, " +
+            "is_read BOOLEAN DEFAULT FALSE, " +
+            "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+            "FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE, " +
+            "FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE, " +
+            "FOREIGN KEY (exchange_request_id) REFERENCES exchange_requests(id) ON DELETE CASCADE)"
         };
 
         try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {

@@ -8,17 +8,49 @@ import java.util.List;
 public class RatingDAO {
 
     public boolean createRating(Rating rating) {
-        String sql = "INSERT INTO ratings (booking_id, rating, review) VALUES (?, ?, ?)";
+        // Check if this user has already rated this booking
+        String checkSql = "SELECT COUNT(*) FROM ratings WHERE booking_id = ? AND rated_by_learner = ?";
+        String sql = "INSERT INTO ratings (booking_id, rating, review, rated_by_learner) VALUES (?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
+             PreparedStatement checkPs = conn.prepareStatement(checkSql);
              PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            // Check if already rated by this role
+            checkPs.setInt(1, rating.getBookingId());
+            checkPs.setBoolean(2, rating.isRatedByLearner());
+            try (ResultSet rs = checkPs.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return false; // Already rated by this role
+                }
+            }
+            
+            // Insert new rating
             ps.setInt(1, rating.getBookingId());
             ps.setInt(2, rating.getRating());
             ps.setString(3, rating.getReview());
+            ps.setBoolean(4, rating.isRatedByLearner());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
+    }
+    
+    public boolean hasRated(int bookingId, boolean isLearner) {
+        String sql = "SELECT COUNT(*) FROM ratings WHERE booking_id = ? AND rated_by_learner = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, bookingId);
+            ps.setBoolean(2, isLearner);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public List<Rating> getRatingsByUser(int userId) {

@@ -6,6 +6,7 @@ public class Rating {
     private int rating;
     private String review;
     private String createdAt;
+    private boolean ratedByLearner; // true = learner rating tutor, false = tutor rating learner
 
     public Rating() {}
 
@@ -19,4 +20,6 @@ public class Rating {
     public void setReview(String review) { this.review = review; }
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
+    public boolean isRatedByLearner() { return ratedByLearner; }
+    public void setRatedByLearner(boolean ratedByLearner) { this.ratedByLearner = ratedByLearner; }
 }

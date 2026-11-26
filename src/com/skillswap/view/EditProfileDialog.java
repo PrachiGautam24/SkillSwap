@@ -3,6 +3,8 @@ package com.skillswap.view;
 import com.skillswap.dao.UserDAO;
 import com.skillswap.model.User;
 import com.skillswap.util.SwingUtils;
+import com.skillswap.util.ValidationUtil;
+import com.skillswap.util.ValidationUtil.ValidationResult;
 import javax.swing.*;
 import java.awt.*;
 import java.util.function.Consumer;
@@ -71,27 +73,74 @@ public class EditProfileDialog extends JDialog {
     }
 
     private void saveChanges() {
+        // Get all values
         String name = nameField.getText().trim();
-        if (name.isEmpty()) {
-            SwingUtils.showError(this, "Name cannot be empty.");
+        String studentId = studentIdField.getText().trim();
+        String department = departmentField.getText().trim();
+        String skills = skillsArea.getText().trim();
+        String skillsToLearn = skillsToLearnArea.getText().trim();
+        String bio = bioArea.getText().trim();
+        
+        // Validate all fields
+        ValidationResult nameValid = ValidationUtil.validateName(name);
+        if (!nameValid.isValid()) {
+            SwingUtils.showError(this, nameValid.getMessage());
+            nameField.requestFocus();
             return;
         }
+        
+        ValidationResult studentIdValid = ValidationUtil.validateStudentId(studentId);
+        if (!studentIdValid.isValid()) {
+            SwingUtils.showError(this, studentIdValid.getMessage());
+            studentIdField.requestFocus();
+            return;
+        }
+        
+        ValidationResult deptValid = ValidationUtil.validateDepartment(department);
+        if (!deptValid.isValid()) {
+            SwingUtils.showError(this, deptValid.getMessage());
+            departmentField.requestFocus();
+            return;
+        }
+        
+        ValidationResult skillsValid = ValidationUtil.validateSkills(skills, "Skills you can teach");
+        if (!skillsValid.isValid()) {
+            SwingUtils.showError(this, skillsValid.getMessage());
+            skillsArea.requestFocus();
+            return;
+        }
+        
+        ValidationResult skillsToLearnValid = ValidationUtil.validateSkills(skillsToLearn, "Skills you want to learn");
+        if (!skillsToLearnValid.isValid()) {
+            SwingUtils.showError(this, skillsToLearnValid.getMessage());
+            skillsToLearnArea.requestFocus();
+            return;
+        }
+        
+        ValidationResult bioValid = ValidationUtil.validateBio(bio);
+        if (!bioValid.isValid()) {
+            SwingUtils.showError(this, bioValid.getMessage());
+            bioArea.requestFocus();
+            return;
+        }
+        
+        // All validation passed - update user
         currentUser.setName(name);
-        currentUser.setStudentId(studentIdField.getText().trim());
-        currentUser.setDepartment(departmentField.getText().trim());
+        currentUser.setStudentId(studentId.toUpperCase());
+        currentUser.setDepartment(department);
         currentUser.setSemester((String) semesterBox.getSelectedItem());
         currentUser.setLearningMode((String) learningModeBox.getSelectedItem());
         currentUser.setPreferredTime(preferredTimeField.getText().trim());
-        currentUser.setSkills(skillsArea.getText().trim());
-        currentUser.setSkillsToLearn(skillsToLearnArea.getText().trim());
-        currentUser.setBio(bioArea.getText().trim());
+        currentUser.setSkills(skills);
+        currentUser.setSkillsToLearn(skillsToLearn);
+        currentUser.setBio(bio);
 
         if (userDAO.updateProfile(currentUser)) {
-            SwingUtils.showSuccess(this, "Profile updated!");
+            SwingUtils.showSuccess(this, "Profile updated successfully!");
             if (onSave != null) onSave.accept(currentUser);
             dispose();
         } else {
-            SwingUtils.showError(this, "Failed to update profile.");
+            SwingUtils.showError(this, "Failed to update profile. Please try again.");
         }
     }
 }

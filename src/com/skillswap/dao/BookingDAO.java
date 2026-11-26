@@ -8,11 +8,13 @@ import java.util.List;
 public class BookingDAO {
 
     public boolean createBooking(int sessionId, int learnerId) {
-        String lockSql = "SELECT id FROM sessions WHERE id = ? AND tutor_id <> ? " +
-                         "AND status = 'open' AND session_type = 'offering' FOR UPDATE";
+        String lockSql = "SELECT s.id, s.scheduled_at, s.max_capacity, " +
+                         "(SELECT COUNT(*) FROM bookings WHERE session_id = s.id AND status IN ('pending', 'confirmed')) as current_bookings " +
+                         "FROM sessions s WHERE s.id = ? AND s.tutor_id <> ? " +
+                         "AND s.status = 'open' AND s.session_type = 'offering' FOR UPDATE";
         String insertSql = "INSERT INTO bookings (session_id, learner_id, status) " +
                            "SELECT ?, ?, 'pending' WHERE NOT EXISTS (SELECT 1 FROM bookings " +
-                           "WHERE session_id = ? AND learner_id = ? AND status <> 'cancelled')";
+                           "WHERE session_id = ? AND learner_id = ? AND status NOT IN ('cancelled', 'completed'))";
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             try (PreparedStatement lock = conn.prepareStatement(lockSql);
@@ -23,6 +25,21 @@ public class BookingDAO {
                     if (!rs.next()) {
                         conn.rollback();
                         return false;
+                    }
+                    
+                    // Check if session is in the past
+                    String scheduledAt = rs.getString("scheduled_at");
+                    if (isPastSession(scheduledAt)) {
+                        conn.rollback();
+                        return false;
+                    }
+                    
+                    // Check capacity
+                    int maxCapacity = rs.getInt("max_capacity");
+                    int currentBookings = rs.getInt("current_bookings");
+                    if (currentBookings >= maxCapacity) {
+                        conn.rollback();
+                        return false; // Session is full
                     }
                 }
                 insert.setInt(1, sessionId);
@@ -38,6 +55,21 @@ public class BookingDAO {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
+        }
+    }
+    
+    private boolean isPastSession(String scheduledAt) {
+        if (scheduledAt == null || scheduledAt.isEmpty()) {
+            return false;
+        }
+        try {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
+            java.util.Date sessionDate = sdf.parse(scheduledAt);
+            java.util.Date now = new java.util.Date();
+            return sessionDate.before(now);
+        } catch (Exception e) {
+            // If we can't parse, allow booking (backward compatibility)
             return false;
         }
     }
@@ -71,8 +103,10 @@ public class BookingDAO {
 
     public List<Booking> getBookingsByUser(int userId) {
         List<Booking> list = new ArrayList<>();
-        String sql = "SELECT b.*, s.title AS session_title, s.skill, s.scheduled_at, " +
-                     "t.name AS tutor_name, l.name AS learner_name, COALESCE(r.rating, 0) AS rating_val " +
+        String sql = "SELECT b.*, s.title AS session_title, s.skill, s.scheduled_at, s.tutor_id, " +
+                     "t.name AS tutor_name, l.name AS learner_name, COALESCE(r.rating, 0) AS rating_val, " +
+                     "(SELECT COUNT(*) FROM ratings WHERE booking_id = b.id AND rated_by_learner = TRUE) as learner_rated, " +
+                     "(SELECT COUNT(*) FROM ratings WHERE booking_id = b.id AND rated_by_learner = FALSE) as tutor_rated " +
                      "FROM bookings b " +
                      "JOIN sessions s ON b.session_id = s.id " +
                      "JOIN users t ON s.tutor_id = t.id " +
@@ -90,6 +124,7 @@ public class BookingDAO {
                     b.setId(rs.getInt("id"));
                     b.setSessionId(rs.getInt("session_id"));
                     b.setLearnerId(rs.getInt("learner_id"));
+                    b.setTutorId(rs.getInt("tutor_id"));
                     b.setStatus(rs.getString("status"));
                     b.setCreatedAt(rs.getString("created_at"));
                     b.setScheduledAt(rs.getString("scheduled_at"));
@@ -98,6 +133,8 @@ public class BookingDAO {
                     b.setTutorName(rs.getString("tutor_name"));
                     b.setLearnerName(rs.getString("learner_name"));
                     b.setRatingValue(rs.getInt("rating_val"));
+                    b.setLearnerHasRated(rs.getInt("learner_rated") > 0);
+                    b.setTutorHasRated(rs.getInt("tutor_rated") > 0);
                     list.add(b);
                 }
             }
@@ -125,5 +162,26 @@ public class BookingDAO {
             e.printStackTrace();
             return false;
         }
+    }
+    
+    /**
+     * Get count of pending bookings where user is the host
+     */
+    public int getPendingHostBookings(int userId) {
+        String sql = "SELECT COUNT(*) FROM bookings b " +
+                     "JOIN sessions s ON b.session_id = s.id " +
+                     "WHERE s.tutor_id = ? AND b.status = 'pending'";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 }

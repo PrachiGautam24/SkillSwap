@@ -15,6 +15,9 @@ public class Booking {
     private String tutorName;
     private String skill;
     private int ratingValue;
+    private int tutorId;  // Added for easier partner identification
+    private boolean learnerHasRated;
+    private boolean tutorHasRated;
 
     public Booking() {}
 
@@ -43,4 +46,19 @@ public class Booking {
     public void setSkill(String skill) { this.skill = skill; }
     public int getRatingValue() { return ratingValue; }
     public void setRatingValue(int ratingValue) { this.ratingValue = ratingValue; }
+    public int getTutorId() { return tutorId; }
+    public void setTutorId(int tutorId) { this.tutorId = tutorId; }
+    
+    /**
+     * Get partner ID based on current user's perspective
+     * @param currentUserId The ID of the current logged-in user
+     * @return The partner's ID (tutor if user is learner, learner if user is tutor)
+     */
+    public int getPartnerId(int currentUserId) {
+        return currentUserId == learnerId ? tutorId : learnerId;
+    }
+    public boolean isLearnerHasRated() { return learnerHasRated; }
+    public void setLearnerHasRated(boolean learnerHasRated) { this.learnerHasRated = learnerHasRated; }
+    public boolean isTutorHasRated() { return tutorHasRated; }
+    public void setTutorHasRated(boolean tutorHasRated) { this.tutorHasRated = tutorHasRated; }
 }
