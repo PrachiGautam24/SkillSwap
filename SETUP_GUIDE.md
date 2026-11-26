@@ -88,13 +88,15 @@ cd SkillSwap
 
 When the app opens, login with one of these demo accounts:
 
-**Account 1:**
-- Email: `alice@uni.edu`
-- Password: `pass123`
+**All accounts use password:** `pass123`
 
-**Account 2:**
-- Email: `bob@uni.edu`
-- Password: `pass123`
+| Email | Name | Skills |
+|-------|------|--------|
+| `alice@uni.edu` | Alice Johnson | Java, Swing, SQL |
+| `bob@uni.edu` | Bob Smith | Python, ML, Pandas |
+| `clara@uni.edu` | Clara Oswald | Figma, UI/UX, Design |
+| `david@uni.edu` | David Kim | Calculus, Linear Algebra, R |
+| `eva@uni.edu` | Eva Martinez | C++, Git, Linux |
 
 ---
 

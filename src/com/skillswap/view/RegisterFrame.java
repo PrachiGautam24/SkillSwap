@@ -9,9 +9,9 @@ import javax.swing.*;
 import java.awt.*;
 
 public class RegisterFrame extends JFrame {
-    private JTextField nameField, emailField, studentIdField, departmentField, preferredTimeField;
+    private JTextField nameField, emailField, studentIdField, departmentField;
     private JPasswordField passwordField, confirmPasswordField;
-    private JComboBox<String> semesterBox, learningModeBox;
+    private JComboBox<String> semesterBox, learningModeBox, preferredTimeBox;
     private JTextArea skillsArea, skillsToLearnArea, bioArea;
     private JLabel passwordStrengthLabel;
     private final UserDAO userDAO = new UserDAO();
@@ -30,10 +30,10 @@ public class RegisterFrame extends JFrame {
         confirmPasswordField = SwingUtils.createStyledPasswordField(18);
         studentIdField = SwingUtils.createStyledTextField(18);
         departmentField = SwingUtils.createStyledTextField(18);
-        preferredTimeField = SwingUtils.createStyledTextField(18);
 
         semesterBox = new JComboBox<>(new String[]{"1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th"});
         learningModeBox = new JComboBox<>(new String[]{"Online", "In-Person", "Hybrid"});
+        preferredTimeBox = new JComboBox<>(new String[]{"Mornings", "Afternoons", "Evenings", "Weekends", "Flexible"});
 
         skillsArea = SwingUtils.createStyledTextArea(2, 18);
         skillsToLearnArea = SwingUtils.createStyledTextArea(2, 18);
@@ -72,7 +72,7 @@ public class RegisterFrame extends JFrame {
         page.field("Semester", semesterBox);
         page.section("Learning preferences");
         page.field("Learning mode", learningModeBox);
-        page.field("Preferred time", preferredTimeField);
+        page.field("Preferred time", preferredTimeBox);
         page.field("Short bio (max 500 chars)", new JScrollPane(bioArea));
         page.section("Skills (separate with commas) *");
         page.field("I can teach *", new JScrollPane(skillsArea));
@@ -196,7 +196,7 @@ public class RegisterFrame extends JFrame {
         user.setDepartment(department);
         user.setSemester((String) semesterBox.getSelectedItem());
         user.setLearningMode((String) learningModeBox.getSelectedItem());
-        user.setPreferredTime(preferredTimeField.getText().trim());
+        user.setPreferredTime((String) preferredTimeBox.getSelectedItem());
         user.setSkills(skills);
         user.setSkillsToLearn(skillsToLearn);
         user.setBio(bio);

@@ -47,9 +47,17 @@ The build script will:
 3. Create the database on first run
 
 ### Step 3: Login with Demo Account
-On first launch, demo accounts are auto-created:
-- **Email**: `alice@uni.edu` | **Password**: `pass123`
-- **Email**: `bob@uni.edu` | **Password**: `pass123`
+On first launch, 5 demo accounts are auto-created (all use password: **pass123**):
+
+| Email | Name | Skills Offered | Skills Wanted |
+|-------|------|----------------|---------------|
+| `alice@uni.edu` | Alice Johnson | Java, Swing, SQL | Python, Machine Learning |
+| `bob@uni.edu` | Bob Smith | Python, ML, Pandas | Java, SQL |
+| `clara@uni.edu` | Clara Oswald | Figma, UI/UX, Design | HTML, CSS, Java |
+| `david@uni.edu` | David Kim | Calculus, Linear Algebra, R | Python, Data Visualization |
+| `eva@uni.edu` | Eva Martinez | C++, Git, Linux | React, UI/UX |
+
+**Password for all accounts:** `pass123`
 
 **That's it!** You're ready to explore SkillSwap! 🎉
 
@@ -237,17 +245,17 @@ This project is open source and available for educational purposes.
 
 ## 🎓 Demo Accounts
 
-**Alice** (Experienced Mentor):
-- Email: `alice@uni.edu`
-- Password: `pass123`
-- Skills Offered: Java, Python, Web Development
-- Skills Wanted: Machine Learning, Data Science
+All demo accounts use the password: **`pass123`**
 
-**Bob** (Active Learner):
-- Email: `bob@uni.edu`
-- Password: `pass123`
-- Skills Offered: JavaScript, React
-- Skills Wanted: Backend Development, Databases
+| Email | Name | Department | Skills Offered | Skills Wanted |
+|-------|------|------------|----------------|---------------|
+| `alice@uni.edu` | Alice Johnson | Computer Science | Java, Swing, SQL | Python, Machine Learning |
+| `bob@uni.edu` | Bob Smith | Data Science | Python, ML, Pandas | Java, SQL |
+| `clara@uni.edu` | Clara Oswald | Design | Figma, UI/UX, Design | HTML, CSS, Java |
+| `david@uni.edu` | David Kim | Mathematics | Calculus, Linear Algebra, R | Python, Data Visualization |
+| `eva@uni.edu` | Eva Martinez | Software Engineering | C++, Git, Linux | React, UI/UX |
+
+**Try logging in as different users to see the matching algorithm in action!**
 
 ---
 
