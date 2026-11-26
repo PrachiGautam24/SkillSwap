@@ -11,6 +11,7 @@ import java.util.List;
 
 public class MyRequestsFrame extends JFrame {
     private final User currentUser;
+    private final JTabbedPane tabs = new JTabbedPane();
     private JTable incomingTable, sentTable;
     private List<ExchangeRequest> incomingList, sentList;
     private final ExchangeRequestDAO requestDAO = new ExchangeRequestDAO();
@@ -21,13 +22,13 @@ public class MyRequestsFrame extends JFrame {
         setSize(880, 500);
         SwingUtils.centerFrame(this);
 
-        JTabbedPane tabs = new JTabbedPane();
+        setContentPane(SwingUtils.page());
+        add(SwingUtils.heading("Exchange requests", null), BorderLayout.NORTH);
         tabs.setFont(SwingUtils.BOLD_FONT);
 
         JPanel incomingPanel = new JPanel(new BorderLayout(10, 10));
         incomingPanel.setBackground(SwingUtils.BACKGROUND);
-        incomingTable = new JTable();
-        SwingUtils.styleTable(incomingTable);
+        incomingTable = SwingUtils.createTable("No incoming exchange requests.");
         incomingPanel.add(new JScrollPane(incomingTable), BorderLayout.CENTER);
 
         JPanel inBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
@@ -37,14 +38,21 @@ public class MyRequestsFrame extends JFrame {
 
         acceptBtn.addActionListener(e -> updateSelectedStatus("accepted"));
         rejectBtn.addActionListener(e -> updateSelectedStatus("rejected"));
+        acceptBtn.setEnabled(false);
+        rejectBtn.setEnabled(false);
+        incomingTable.getSelectionModel().addListSelectionListener(e -> {
+            int selected = incomingTable.getSelectedRow();
+            boolean pending = selected >= 0 && "pending".equals(incomingList.get(selected).getStatus());
+            acceptBtn.setEnabled(pending);
+            rejectBtn.setEnabled(pending);
+        });
         inBtns.add(acceptBtn);
         inBtns.add(rejectBtn);
         incomingPanel.add(inBtns, BorderLayout.SOUTH);
 
         JPanel sentPanel = new JPanel(new BorderLayout());
         sentPanel.setBackground(SwingUtils.BACKGROUND);
-        sentTable = new JTable();
-        SwingUtils.styleTable(sentTable);
+        sentTable = SwingUtils.createTable("Requests you send from Find Matches will appear here.");
         sentPanel.add(new JScrollPane(sentTable), BorderLayout.CENTER);
 
         tabs.addTab("Incoming Requests", incomingPanel);
@@ -54,7 +62,7 @@ public class MyRequestsFrame extends JFrame {
         loadTables();
     }
 
-    private void loadTables() {
+    void loadTables() {
         incomingList = requestDAO.getIncomingRequests(currentUser.getId());
         DefaultTableModel inModel = new DefaultTableModel(
                 new String[]{"From Student", "They Offer", "They Request", "Message", "Status"}, 0) {
@@ -74,6 +82,8 @@ public class MyRequestsFrame extends JFrame {
             sentModel.addRow(new Object[]{r.getToUserName(), r.getSkillOffering(), r.getSkillRequesting(), r.getMessage(), r.getStatus().toUpperCase()});
         }
         sentTable.setModel(sentModel);
+        tabs.setTitleAt(0, "Incoming (" + incomingList.size() + ")");
+        tabs.setTitleAt(1, "Sent (" + sentList.size() + ")");
     }
 
     private void updateSelectedStatus(String status) {
@@ -86,6 +96,9 @@ public class MyRequestsFrame extends JFrame {
         if (requestDAO.updateRequestStatus(req.getId(), status)) {
             SwingUtils.showSuccess(this, "Request marked as " + status + ".");
             loadTables();
+        } else {
+            loadTables();
+            SwingUtils.showError(this, "Could not change this request. Check its current status.");
         }
     }
 }

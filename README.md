@@ -5,7 +5,7 @@ A desktop application built with **Pure Java (JDK 8+)**, **Java Swing/AWT**, **H
 ## Features
 - **Authentication**: Student registration & login with BCrypt password hashing (`LoginFrame`, `RegisterFrame`).
 - **Dashboard Hub**: Real-time statistics cards, campus announcements, and sidebar navigation (`DashboardFrame`).
-- **Session Management**: Create, edit, delete, and manage bookings for *Offering Help* and *Requesting Help* sessions (`CreateSessionDialog`, `MySessionsFrame`, `SessionBookingsDialog`).
+- **My Sessions** opens on the bookings you made or host. Filter by role to see the partner, scheduled time, and status. Manage your own posts in **My offers** and **My help requests**.
 - **Smart Peer Matching**: Calculates compatibility scores (0–100%) based on complementary skills and learning modes (`FindMatchesFrame`).
 - **Skill Exchange Requests**: Send, accept, or reject direct peer skill swap proposals (`SendRequestDialog`, `MyRequestsFrame`).
 - **Ratings & Leaderboard**: 1–5 star session reviews and Top 10 peer mentor rankings (`MyExchangesFrame`, `RateSessionDialog`, `LeaderboardFrame`).
@@ -13,13 +13,10 @@ A desktop application built with **Pure Java (JDK 8+)**, **Java Swing/AWT**, **H
 
 ## Setup & Running Locally
 
-1. **Add Dependencies** to the `lib/` folder:
-   - `h2-1.4.200.jar`
-   - `bcrypt-0.10.2.jar` (or `jbcrypt-0.4.jar`)
+1. Install a JDK (Java 8 or newer).
+2. On Windows, run `build.bat`. On macOS or Linux, run `bash build.sh`.
 
-2. **Compile & Run**:
-   - **Windows**: Double-click or run `build.bat`
-   - **macOS / Linux**: Run `chmod +x build.sh && ./build.sh`
+The local build uses H2 1.4.200 and jBCrypt from `lib/`. This checkout includes H2 and a jBCrypt JAR built from the upstream Java source. A clean checkout can also use the Maven artifacts `com.h2database:h2:1.4.200` and `org.mindrot:jbcrypt:0.4`.
 
 ## Demo Credentials (Auto-seeded on First Launch)
 - **Email**: `alice@uni.edu` | **Password**: `pass123`

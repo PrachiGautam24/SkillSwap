@@ -9,32 +9,28 @@ import java.util.List;
 
 public class LeaderboardFrame extends JFrame {
     private final RatingDAO ratingDAO = new RatingDAO();
+    private final JTable table = SwingUtils.createTable("No mentors to rank yet.");
 
     public LeaderboardFrame() {
         setTitle("SkillSwap - Top Mentors Leaderboard");
         setSize(820, 480);
         SwingUtils.centerFrame(this);
-        setLayout(new BorderLayout(10, 10));
-        getContentPane().setBackground(SwingUtils.BACKGROUND);
+        setContentPane(SwingUtils.page());
+        add(SwingUtils.heading("Top 10 peer mentors", null), BorderLayout.NORTH);
+        add(new JScrollPane(table), BorderLayout.CENTER);
+        loadLeaderboard();
+    }
 
-        JLabel header = SwingUtils.createLabel("  Top 10 Peer Mentors", SwingUtils.TITLE_FONT, SwingUtils.PRIMARY);
-        header.setBorder(BorderFactory.createEmptyBorder(15, 10, 5, 10));
-        add(header, BorderLayout.NORTH);
-
-        JTable table = new JTable();
-        SwingUtils.styleTable(table);
-
-        DefaultTableModel model = new DefaultTableModel(
-                new String[]{"Rank", "Name", "Skills", "Avg Rating", "Total Sessions", "Total Reviews"}, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
-        };
+    void loadLeaderboard() {
+        DefaultTableModel model = SwingUtils.readOnlyModel("Rank", "Mentor", "Skills", "Avg rating", "Sessions", "Reviews");
 
         List<Object[]> rows = ratingDAO.getLeaderboard(10);
         for (Object[] r : rows) {
             model.addRow(r);
         }
         table.setModel(model);
+        int[] widths = {54, 148, 240, 98, 80, 80};
+        for (int i = 0; i < widths.length; i++) table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
 
-        add(new JScrollPane(table), BorderLayout.CENTER);
     }
 }

@@ -10,7 +10,7 @@ import java.awt.*;
 public class RateSessionDialog extends JDialog {
     private final Booking booking;
     private final Runnable onSuccess;
-    private final JLabel[] stars = new JLabel[5];
+    private final JLabel score = SwingUtils.createLabel("", SwingUtils.SUBTITLE_FONT, SwingUtils.AMBER);
     private JSlider ratingSlider;
     private JTextArea reviewArea;
     private final RatingDAO ratingDAO = new RatingDAO();
@@ -20,58 +20,38 @@ public class RateSessionDialog extends JDialog {
         this.booking = booking;
         this.onSuccess = onSuccess;
 
-        setSize(420, 360);
+        setSize(550, 440);
         SwingUtils.centerFrame(this);
-
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(SwingUtils.BACKGROUND);
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(8, 5, 8, 5);
-        gbc.gridx = 0;
-
-        JPanel starPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 5));
-        starPanel.setOpaque(false);
-        for (int i = 0; i < 5; i++) {
-            stars[i] = new JLabel("★");
-            stars[i].setFont(new Font("SansSerif", Font.BOLD, 28));
-            stars[i].setForeground(new Color(250, 204, 21));
-            starPanel.add(stars[i]);
-        }
-        gbc.gridy = 0;
-        panel.add(starPanel, gbc);
-
+        FormPage page = new FormPage("Rate session");
+        page.section(booking.getSessionTitle());
         ratingSlider = new JSlider(1, 5, 5);
         ratingSlider.setMajorTickSpacing(1);
+        ratingSlider.setSnapToTicks(true);
         ratingSlider.setPaintTicks(true);
         ratingSlider.setPaintLabels(true);
-        ratingSlider.setBackground(SwingUtils.BACKGROUND);
-        ratingSlider.setForeground(SwingUtils.TEXT_PRIMARY);
-        ratingSlider.addChangeListener(e -> updateStars(ratingSlider.getValue()));
+        ratingSlider.setOpaque(false);
+        ratingSlider.getAccessibleContext().setAccessibleName("Session rating from 1 to 5");
+        ratingSlider.addChangeListener(e -> showScore());
+        showScore();
 
-        gbc.gridy = 1;
-        panel.add(ratingSlider, gbc);
-
-        gbc.gridy = 2;
-        panel.add(SwingUtils.createLabel("Written Review:", SwingUtils.BOLD_FONT, SwingUtils.TEXT_PRIMARY), gbc);
-
-        reviewArea = SwingUtils.createStyledTextArea(4, 20);
-        gbc.gridy = 3;
-        panel.add(new JScrollPane(reviewArea), gbc);
-
+        JPanel rating = new JPanel(new BorderLayout(0, 5));
+        rating.setOpaque(false);
+        rating.add(score, BorderLayout.NORTH);
+        rating.add(ratingSlider, BorderLayout.CENTER);
+        page.field("Your rating", rating);
+        reviewArea = SwingUtils.createStyledTextArea(4, 18);
+        page.field("Written review", new JScrollPane(reviewArea));
+        JButton cancelBtn = SwingUtils.createStyledButton("Cancel", SwingUtils.CARD);
         JButton submitBtn = SwingUtils.createStyledButton("Submit Rating", SwingUtils.PRIMARY_DARK);
+        cancelBtn.addActionListener(e -> dispose());
         submitBtn.addActionListener(e -> submitRating());
-        gbc.gridy = 4;
-        panel.add(submitBtn, gbc);
-
-        add(panel);
+        page.actions(cancelBtn, submitBtn);
+        setContentPane(page);
+        getRootPane().setDefaultButton(submitBtn);
     }
 
-    private void updateStars(int count) {
-        for (int i = 0; i < 5; i++) {
-            stars[i].setForeground(i < count ? new Color(250, 204, 21) : SwingUtils.BORDER_COLOR);
-        }
+    private void showScore() {
+        score.setText(ratingSlider.getValue() + " out of 5");
     }
 
     private void submitRating() {

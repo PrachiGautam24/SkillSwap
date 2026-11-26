@@ -13,6 +13,9 @@ public class SessionBookingsDialog extends JDialog {
     private final Session session;
     private final Runnable onUpdate;
     private JTable bookingTable;
+    private final JButton confirmBtn = SwingUtils.createStyledButton("Confirm", SwingUtils.PRIMARY_DARK);
+    private final JButton completeBtn = SwingUtils.createStyledButton("Complete", SwingUtils.SUCCESS);
+    private final JButton cancelBtn = SwingUtils.createStyledButton("Cancel booking", SwingUtils.DANGER);
     private List<Booking> bookingList;
     private final BookingDAO bookingDAO = new BookingDAO();
 
@@ -23,19 +26,14 @@ public class SessionBookingsDialog extends JDialog {
 
         setSize(700, 420);
         SwingUtils.centerFrame(this);
-        setLayout(new BorderLayout(10, 10));
-        getContentPane().setBackground(SwingUtils.BACKGROUND);
-
-        bookingTable = new JTable();
-        SwingUtils.styleTable(bookingTable);
+        setContentPane(SwingUtils.page());
+        add(SwingUtils.heading(session.getTitle(), null), BorderLayout.NORTH);
+        bookingTable = SwingUtils.createTable("No learners have booked this session yet.");
         add(new JScrollPane(bookingTable), BorderLayout.CENTER);
 
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        btns.setBackground(SwingUtils.CARD);
+        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        btns.setOpaque(false);
 
-        JButton confirmBtn = SwingUtils.createStyledButton("Confirm", SwingUtils.PRIMARY_DARK);
-        JButton completeBtn = SwingUtils.createStyledButton("Complete", SwingUtils.SUCCESS);
-        JButton cancelBtn = SwingUtils.createStyledButton("Cancel Booking", SwingUtils.DANGER);
 
         confirmBtn.addActionListener(e -> changeStatus("confirmed"));
         completeBtn.addActionListener(e -> changeStatus("completed"));
@@ -46,6 +44,7 @@ public class SessionBookingsDialog extends JDialog {
         btns.add(cancelBtn);
         add(btns, BorderLayout.SOUTH);
 
+        bookingTable.getSelectionModel().addListSelectionListener(e -> updateActions());
         loadBookings();
     }
 
@@ -59,6 +58,15 @@ public class SessionBookingsDialog extends JDialog {
             model.addRow(new Object[]{b.getLearnerName(), b.getLearnerEmail(), b.getStatus().toUpperCase(), b.getCreatedAt()});
         }
         bookingTable.setModel(model);
+        updateActions();
+    }
+
+    private void updateActions() {
+        int row = bookingTable.getSelectedRow();
+        String status = row < 0 ? "" : bookingList.get(bookingTable.convertRowIndexToModel(row)).getStatus();
+        confirmBtn.setEnabled("pending".equals(status));
+        completeBtn.setEnabled("confirmed".equals(status));
+        cancelBtn.setEnabled("pending".equals(status) || "confirmed".equals(status));
     }
 
     private void changeStatus(String status) {
@@ -67,11 +75,13 @@ public class SessionBookingsDialog extends JDialog {
             SwingUtils.showError(this, "Please select a booking first.");
             return;
         }
-        Booking b = bookingList.get(row);
+        Booking b = bookingList.get(bookingTable.convertRowIndexToModel(row));
         if (bookingDAO.updateBookingStatus(b.getId(), status)) {
-            SwingUtils.showSuccess(this, "Booking updated to " + status + ".");
             loadBookings();
             if (onUpdate != null) onUpdate.run();
+        } else {
+            loadBookings();
+            SwingUtils.showError(this, "Could not update this booking. Check its current status and try again.");
         }
     }
 }

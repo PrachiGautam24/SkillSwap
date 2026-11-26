@@ -66,7 +66,8 @@ public class ExchangeRequestDAO {
     }
 
     public boolean updateRequestStatus(int requestId, String status) {
-        String sql = "UPDATE exchange_requests SET status = ? WHERE id = ?";
+        if (!"accepted".equals(status) && !"rejected".equals(status)) return false;
+        String sql = "UPDATE exchange_requests SET status = ? WHERE id = ? AND status = 'pending'";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);

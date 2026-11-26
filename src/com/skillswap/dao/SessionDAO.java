@@ -64,6 +64,24 @@ public class SessionDAO {
         return list;
     }
 
+    public List<Session> getBookableSessions(int hostId, int learnerId) throws SQLException {
+        List<Session> sessions = new ArrayList<>();
+        String sql = "SELECT s.* FROM sessions s WHERE s.tutor_id = ? AND s.tutor_id <> ? " +
+                     "AND s.session_type = 'offering' AND s.status = 'open' " +
+                     "AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.session_id = s.id " +
+                     "AND b.learner_id = ? AND b.status <> 'cancelled') ORDER BY s.id DESC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, hostId);
+            ps.setInt(2, learnerId);
+            ps.setInt(3, learnerId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) sessions.add(mapRow(rs));
+            }
+        }
+        return sessions;
+    }
+
     public boolean updateSession(Session session) {
         String sql = "UPDATE sessions SET title=?, description=?, skill=?, scheduled_at=?, session_type=? WHERE id=?";
         try (Connection conn = DBConnection.getConnection();

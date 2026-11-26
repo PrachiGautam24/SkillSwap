@@ -19,22 +19,10 @@ public class SendRequestDialog extends JDialog {
         this.currentUser = currentUser;
         this.targetUser = targetUser;
 
-        setSize(460, 400);
+        setSize(600, 420);
         SwingUtils.centerFrame(this);
 
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(SwingUtils.BACKGROUND);
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(6, 6, 6, 6);
-
-        JLabel targetInfo = SwingUtils.createLabel(
-                "To: " + targetUser.getName() + " (Knows: " + targetUser.getSkills() + ")",
-                SwingUtils.BOLD_FONT, SwingUtils.PRIMARY);
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
-        panel.add(targetInfo, gbc);
-        gbc.gridwidth = 1;
+        FormPage page = new FormPage("Send an exchange request");
 
         offeringField = SwingUtils.createStyledTextField(20);
         offeringField.setText(currentUser.getSkills());
@@ -43,30 +31,19 @@ public class SendRequestDialog extends JDialog {
         messageArea = SwingUtils.createStyledTextArea(4, 20);
         messageArea.setText("Hi " + targetUser.getName() + ", would love to swap skills with you!");
 
-        addRow(panel, gbc, 1, "Skill You Offer *:", offeringField);
-        addRow(panel, gbc, 2, "Skill You Request *:", requestingField);
-        addRow(panel, gbc, 3, "Personal Message:", new JScrollPane(messageArea));
+        page.section("To " + targetUser.getName());
+        page.field("Skill you offer *", offeringField);
+        page.field("Skill you request *", requestingField);
+        page.field("Message", new JScrollPane(messageArea));
 
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btns.setOpaque(false);
         JButton cancelBtn = SwingUtils.createStyledButton("Cancel", SwingUtils.CARD);
         JButton sendBtn = SwingUtils.createStyledButton("Send Request", SwingUtils.PRIMARY_DARK);
 
         cancelBtn.addActionListener(e -> dispose());
         sendBtn.addActionListener(e -> sendRequest());
-        btns.add(cancelBtn);
-        btns.add(sendBtn);
-
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
-        panel.add(btns, gbc);
-        add(panel);
-    }
-
-    private void addRow(JPanel p, GridBagConstraints gbc, int r, String lbl, Component c) {
-        gbc.gridx = 0; gbc.gridy = r; gbc.weightx = 0.35;
-        p.add(SwingUtils.createLabel(lbl, SwingUtils.BOLD_FONT, SwingUtils.TEXT_PRIMARY), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.65;
-        p.add(c, gbc);
+        page.actions(cancelBtn, sendBtn);
+        setContentPane(page);
+        getRootPane().setDefaultButton(sendBtn);
     }
 
     private void sendRequest() {

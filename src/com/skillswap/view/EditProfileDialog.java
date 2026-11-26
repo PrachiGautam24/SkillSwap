@@ -20,15 +20,10 @@ public class EditProfileDialog extends JDialog {
         this.currentUser = currentUser;
         this.onSave = onSave;
 
-        setSize(540, 580);
+        setSize(620, 680);
         SwingUtils.centerFrame(this);
 
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(SwingUtils.BACKGROUND);
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(6, 6, 6, 6);
+        FormPage page = new FormPage("Edit profile");
 
         nameField = SwingUtils.createStyledTextField(18);
         nameField.setText(currentUser.getName());
@@ -52,38 +47,27 @@ public class EditProfileDialog extends JDialog {
         bioArea = SwingUtils.createStyledTextArea(3, 18);
         bioArea.setText(currentUser.getBio());
 
-        int r = 0;
-        addRow(panel, gbc, r++, "Full Name *:", nameField);
-        addRow(panel, gbc, r++, "Student ID:", studentIdField);
-        addRow(panel, gbc, r++, "Department:", departmentField);
-        addRow(panel, gbc, r++, "Semester:", semesterBox);
-        addRow(panel, gbc, r++, "Learning Mode:", learningModeBox);
-        addRow(panel, gbc, r++, "Preferred Time:", preferredTimeField);
-        addRow(panel, gbc, r++, "My Skills:", new JScrollPane(skillsArea));
-        addRow(panel, gbc, r++, "Skills to Learn:", new JScrollPane(skillsToLearnArea));
-        addRow(panel, gbc, r++, "Bio:", new JScrollPane(bioArea));
+        page.section("Student details");
+        page.field("Full name *", nameField);
+        page.field("Student ID", studentIdField);
+        page.field("Department", departmentField);
+        page.field("Semester", semesterBox);
+        page.section("Learning preferences");
+        page.field("Learning mode", learningModeBox);
+        page.field("Preferred time", preferredTimeField);
+        page.field("Short bio", new JScrollPane(bioArea));
+        page.section("Skills (separate with commas)");
+        page.field("I can teach", new JScrollPane(skillsArea));
+        page.field("I want to learn", new JScrollPane(skillsToLearnArea));
 
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btns.setOpaque(false);
         JButton cancelBtn = SwingUtils.createStyledButton("Cancel", SwingUtils.CARD);
         JButton saveBtn = SwingUtils.createStyledButton("Save Changes", SwingUtils.PRIMARY_DARK);
 
         cancelBtn.addActionListener(e -> dispose());
         saveBtn.addActionListener(e -> saveChanges());
-        btns.add(cancelBtn);
-        btns.add(saveBtn);
-
-        gbc.gridx = 0; gbc.gridy = r; gbc.gridwidth = 2;
-        panel.add(btns, gbc);
-
-        add(new JScrollPane(panel));
-    }
-
-    private void addRow(JPanel p, GridBagConstraints gbc, int r, String lbl, Component c) {
-        gbc.gridx = 0; gbc.gridy = r; gbc.weightx = 0.3;
-        p.add(SwingUtils.createLabel(lbl, SwingUtils.BOLD_FONT, SwingUtils.TEXT_PRIMARY), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.7;
-        p.add(c, gbc);
+        page.actions(cancelBtn, saveBtn);
+        setContentPane(page);
+        getRootPane().setDefaultButton(saveBtn);
     }
 
     private void saveChanges() {

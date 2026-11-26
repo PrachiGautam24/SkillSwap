@@ -13,47 +13,38 @@ public class LoginFrame extends JFrame {
 
     public LoginFrame() {
         setTitle("SkillSwap - Login");
-        setSize(450, 380);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setResizable(false);
-        SwingUtils.centerFrame(this);
+        JPanel page = SwingUtils.page();
+        JLabel brand = SwingUtils.wordmark();
+        brand.setBorder(BorderFactory.createEmptyBorder(4, 0, 8, 0));
+        page.add(brand, BorderLayout.NORTH);
 
-        JPanel mainPanel = new JPanel(new GridBagLayout());
-        mainPanel.setBackground(SwingUtils.BACKGROUND);
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(25, 35, 25, 35));
+        JPanel card = new JPanel(new GridBagLayout());
+        card.setBackground(SwingUtils.CARD);
+        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(SwingUtils.BORDER_COLOR),
+                BorderFactory.createEmptyBorder(20, 22, 20, 22)));
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.weightx = 1;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.anchor = GridBagConstraints.WEST;
+        c.insets = new Insets(0, 0, 12, 0);
+        card.add(SwingUtils.createLabel("Sign in", SwingUtils.TITLE_FONT, SwingUtils.TEXT_PRIMARY), c);
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(8, 5, 8, 5);
-        gbc.gridx = 0;
-
-        JLabel title = SwingUtils.createLabel("SkillSwap", SwingUtils.TITLE_FONT, SwingUtils.PRIMARY);
-        title.setHorizontalAlignment(SwingConstants.CENTER);
-        gbc.gridy = 0;
-        mainPanel.add(title, gbc);
-
-        JLabel subtitle = SwingUtils.createLabel("Peer-to-Peer Student Skill Exchange", SwingUtils.BODY_FONT, SwingUtils.TEXT_SECONDARY);
-        subtitle.setHorizontalAlignment(SwingConstants.CENTER);
-        gbc.gridy = 1;
-        mainPanel.add(subtitle, gbc);
-
-        gbc.gridy = 2;
-        mainPanel.add(SwingUtils.createLabel("Email Address:", SwingUtils.BOLD_FONT, SwingUtils.TEXT_PRIMARY), gbc);
-
-        emailField = SwingUtils.createStyledTextField(20);
+        emailField = SwingUtils.createStyledTextField(24);
         emailField.setText("alice@uni.edu");
-        gbc.gridy = 3;
-        mainPanel.add(emailField, gbc);
-
-        gbc.gridy = 4;
-        mainPanel.add(SwingUtils.createLabel("Password:", SwingUtils.BOLD_FONT, SwingUtils.TEXT_PRIMARY), gbc);
-
-        passwordField = SwingUtils.createStyledPasswordField(20);
+        passwordField = SwingUtils.createStyledPasswordField(24);
         passwordField.setText("pass123");
-        gbc.gridy = 5;
-        mainPanel.add(passwordField, gbc);
-
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
+        for (JTextField field : new JTextField[]{emailField, passwordField}) {
+            JLabel label = SwingUtils.createLabel(field == emailField ? "Email address" : "Password",
+                    SwingUtils.BOLD_FONT, SwingUtils.TEXT_PRIMARY);
+            label.setLabelFor(field);
+            c.insets = new Insets(0, 0, 5, 0);
+            card.add(label, c);
+            c.insets = new Insets(0, 0, 16, 0);
+            card.add(field, c);
+        }
+        JPanel btnPanel = new JPanel(new GridLayout(1, 2, 10, 0));
         btnPanel.setOpaque(false);
         JButton loginBtn = SwingUtils.createStyledButton("Login", SwingUtils.PRIMARY_DARK);
         JButton registerBtn = SwingUtils.createStyledButton("Register", SwingUtils.CARD);
@@ -64,12 +55,15 @@ public class LoginFrame extends JFrame {
             new RegisterFrame().setVisible(true);
         });
 
-        btnPanel.add(loginBtn);
         btnPanel.add(registerBtn);
-        gbc.gridy = 6;
-        mainPanel.add(btnPanel, gbc);
-
-        add(mainPanel);
+        btnPanel.add(loginBtn);
+        c.insets = new Insets(2, 0, 0, 0);
+        card.add(btnPanel, c);
+        page.add(card, BorderLayout.CENTER);
+        setContentPane(page);
+        pack();
+        setMinimumSize(getSize());
+        SwingUtils.centerFrame(this);
         getRootPane().setDefaultButton(loginBtn);
     }
 

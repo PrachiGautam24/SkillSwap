@@ -13,6 +13,7 @@ public class CreateSessionDialog extends JDialog {
     private JRadioButton offeringRadio, requestingRadio;
     private final User currentUser;
     private final Session editingSession;
+    private Session savedSession;
     private final Runnable onSuccess;
     private final SessionDAO sessionDAO = new SessionDAO();
 
@@ -26,34 +27,29 @@ public class CreateSessionDialog extends JDialog {
         this.editingSession = editingSession;
         this.onSuccess = onSuccess;
 
-        setSize(480, 440);
+        setSize(600, 470);
         SwingUtils.centerFrame(this);
 
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(SwingUtils.BACKGROUND);
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(6, 6, 6, 6);
+        FormPage page = new FormPage(editingSession == null ? "Create a session" : "Edit session");
 
         titleField = SwingUtils.createStyledTextField(20);
         skillField = SwingUtils.createStyledTextField(20);
         scheduledAtField = SwingUtils.createStyledTextField(20);
-        scheduledAtField.setText("2026-11-25 17:00");
+        scheduledAtField.setText(java.time.LocalDate.now().plusDays(1) + " 17:00");
         descriptionArea = SwingUtils.createStyledTextArea(4, 20);
 
-        offeringRadio = new JRadioButton("Offering Help (Teaching)", true);
-        requestingRadio = new JRadioButton("Requesting Help (Learning)");
-        offeringRadio.setBackground(SwingUtils.BACKGROUND);
+        offeringRadio = new JRadioButton("Offer help", true);
+        requestingRadio = new JRadioButton("Request help");
+        offeringRadio.setOpaque(false);
         offeringRadio.setForeground(SwingUtils.TEXT_PRIMARY);
-        requestingRadio.setBackground(SwingUtils.BACKGROUND);
+        requestingRadio.setOpaque(false);
         requestingRadio.setForeground(SwingUtils.TEXT_PRIMARY);
 
         ButtonGroup group = new ButtonGroup();
         group.add(offeringRadio);
         group.add(requestingRadio);
 
-        JPanel radioPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        JPanel radioPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
         radioPanel.setOpaque(false);
         radioPanel.add(offeringRadio);
         radioPanel.add(requestingRadio);
@@ -68,33 +64,20 @@ public class CreateSessionDialog extends JDialog {
             }
         }
 
-        int r = 0;
-        addRow(panel, gbc, r++, "Session Type:", radioPanel);
-        addRow(panel, gbc, r++, "Session Title *:", titleField);
-        addRow(panel, gbc, r++, "Target Skill *:", skillField);
-        addRow(panel, gbc, r++, "Scheduled Date/Time:", scheduledAtField);
-        addRow(panel, gbc, r++, "Description:", new JScrollPane(descriptionArea));
+        page.field("Session type", radioPanel);
+        page.field("Session title *", titleField);
+        page.field("Skill *", skillField);
+        page.field("Scheduled for", scheduledAtField);
+        page.field("Description", new JScrollPane(descriptionArea));
 
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btns.setOpaque(false);
         JButton cancelBtn = SwingUtils.createStyledButton("Cancel", SwingUtils.CARD);
         JButton saveBtn = SwingUtils.createStyledButton(editingSession == null ? "Create Session" : "Update Session", SwingUtils.PRIMARY_DARK);
 
         cancelBtn.addActionListener(e -> dispose());
         saveBtn.addActionListener(e -> saveSession());
-        btns.add(cancelBtn);
-        btns.add(saveBtn);
-
-        gbc.gridx = 0; gbc.gridy = r; gbc.gridwidth = 2;
-        panel.add(btns, gbc);
-        add(panel);
-    }
-
-    private void addRow(JPanel p, GridBagConstraints gbc, int r, String lbl, Component c) {
-        gbc.gridx = 0; gbc.gridy = r; gbc.weightx = 0.3;
-        p.add(SwingUtils.createLabel(lbl, SwingUtils.BOLD_FONT, SwingUtils.TEXT_PRIMARY), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.7;
-        p.add(c, gbc);
+        page.actions(cancelBtn, saveBtn);
+        setContentPane(page);
+        getRootPane().setDefaultButton(saveBtn);
     }
 
     private void saveSession() {
@@ -105,7 +88,8 @@ public class CreateSessionDialog extends JDialog {
             return;
         }
 
-        Session s = editingSession != null ? editingSession : new Session();
+        Session s = new Session();
+        if (editingSession != null) s.setId(editingSession.getId());
         s.setTutorId(currentUser.getId());
         s.setTitle(title);
         s.setSkill(skill);
@@ -116,11 +100,14 @@ public class CreateSessionDialog extends JDialog {
 
         boolean ok = (editingSession == null) ? sessionDAO.createSession(s) : sessionDAO.updateSession(s);
         if (ok) {
-            SwingUtils.showSuccess(this, "Session saved successfully!");
+            savedSession = s;
             if (onSuccess != null) onSuccess.run();
+            SwingUtils.showSuccess(this, "Session saved successfully!");
             dispose();
         } else {
             SwingUtils.showError(this, "Failed to save session.");
         }
     }
+
+    public Session getSavedSession() { return savedSession; }
 }

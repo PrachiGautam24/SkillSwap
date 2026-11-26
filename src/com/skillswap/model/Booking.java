@@ -9,6 +9,7 @@ public class Booking {
 
     // Joined fields
     private String sessionTitle;
+    private String scheduledAt;
     private String learnerName;
     private String learnerEmail;
     private String tutorName;
@@ -29,6 +30,9 @@ public class Booking {
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
     public String getSessionTitle() { return sessionTitle; }
     public void setSessionTitle(String sessionTitle) { this.sessionTitle = sessionTitle; }
+    public String getScheduledAt() { return scheduledAt; }
+    public void setScheduledAt(String scheduledAt) { this.scheduledAt = scheduledAt; }
+    public String getPartnerName(int userId) { return learnerId == userId ? tutorName : learnerName; }
     public String getLearnerName() { return learnerName; }
     public void setLearnerName(String learnerName) { this.learnerName = learnerName; }
     public String getLearnerEmail() { return learnerEmail; }

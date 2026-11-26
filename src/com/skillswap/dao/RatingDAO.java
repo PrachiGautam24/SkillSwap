@@ -88,7 +88,7 @@ public class RatingDAO {
                         "#" + (rank++),
                         rs.getString("name"),
                         rs.getString("skills"),
-                        avg > 0 ? String.format("%.1f ★", avg) : "No ratings",
+                        avg > 0 ? String.format("%.1f / 5", avg) : "No ratings",
                         rs.getInt("total_sessions"),
                         rs.getInt("total_reviews")
                     });

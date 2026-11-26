@@ -4,7 +4,9 @@ import com.skillswap.util.PasswordUtil;
 import java.sql.*;
 
 public class DBConnection {
-    private static final String URL = "jdbc:h2:~/skillswapdb;MODE=MySQL;AUTO_SERVER=TRUE";
+    private static final String LOCAL_URL = "jdbc:h2:~/skillswapdb;MODE=MySQL";
+    private static final String SHARED_URL = LOCAL_URL + ";AUTO_SERVER=TRUE";
+    private static volatile String url = System.getProperty("skillswap.db.url", SHARED_URL);
     private static final String USER = "sa";
     private static final String PASS = "";
 
@@ -17,7 +19,16 @@ public class DBConnection {
     }
 
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(URL, USER, PASS);
+        String requested = url;
+        try {
+            return DriverManager.getConnection(requested, USER, PASS);
+        } catch (SQLException e) {
+            // H2 90061 means the optional automatic server could not open a port.
+            if (!SHARED_URL.equals(requested) || e.getErrorCode() != 90061) throw e;
+            Connection local = DriverManager.getConnection(LOCAL_URL, USER, PASS);
+            url = LOCAL_URL;
+            return local;
+        }
     }
 
     public static void initializeTables() {
@@ -89,7 +100,7 @@ public class DBConnection {
             }
             seedDemoData(conn);
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Could not initialize the SkillSwap database.", e);
         }
     }
 

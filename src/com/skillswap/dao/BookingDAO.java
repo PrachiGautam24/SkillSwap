@@ -8,20 +8,33 @@ import java.util.List;
 public class BookingDAO {
 
     public boolean createBooking(int sessionId, int learnerId) {
-        String checkSql = "SELECT COUNT(*) FROM bookings WHERE session_id = ? AND learner_id = ?";
-        String insertSql = "INSERT INTO bookings (session_id, learner_id, status) VALUES (?, ?, 'pending')";
+        String lockSql = "SELECT id FROM sessions WHERE id = ? AND tutor_id <> ? " +
+                         "AND status = 'open' AND session_type = 'offering' FOR UPDATE";
+        String insertSql = "INSERT INTO bookings (session_id, learner_id, status) " +
+                           "SELECT ?, ?, 'pending' WHERE NOT EXISTS (SELECT 1 FROM bookings " +
+                           "WHERE session_id = ? AND learner_id = ? AND status <> 'cancelled')";
         try (Connection conn = DBConnection.getConnection()) {
-            try (PreparedStatement checkPs = conn.prepareStatement(checkSql)) {
-                checkPs.setInt(1, sessionId);
-                checkPs.setInt(2, learnerId);
-                try (ResultSet rs = checkPs.executeQuery()) {
-                    if (rs.next() && rs.getInt(1) > 0) return false;
+            conn.setAutoCommit(false);
+            try (PreparedStatement lock = conn.prepareStatement(lockSql);
+                 PreparedStatement insert = conn.prepareStatement(insertSql)) {
+                lock.setInt(1, sessionId);
+                lock.setInt(2, learnerId);
+                try (ResultSet rs = lock.executeQuery()) {
+                    if (!rs.next()) {
+                        conn.rollback();
+                        return false;
+                    }
                 }
-            }
-            try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
-                ps.setInt(1, sessionId);
-                ps.setInt(2, learnerId);
-                return ps.executeUpdate() > 0;
+                insert.setInt(1, sessionId);
+                insert.setInt(2, learnerId);
+                insert.setInt(3, sessionId);
+                insert.setInt(4, learnerId);
+                boolean created = insert.executeUpdate() == 1;
+                conn.commit();
+                return created;
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -66,7 +79,7 @@ public class BookingDAO {
                      "JOIN users l ON b.learner_id = l.id " +
                      "LEFT JOIN ratings r ON b.id = r.booking_id " +
                      "WHERE (b.learner_id = ? OR s.tutor_id = ?) " +
-                     "ORDER BY b.created_at DESC";
+                     "ORDER BY b.created_at DESC, b.id DESC";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
@@ -78,7 +91,8 @@ public class BookingDAO {
                     b.setSessionId(rs.getInt("session_id"));
                     b.setLearnerId(rs.getInt("learner_id"));
                     b.setStatus(rs.getString("status"));
-                    b.setCreatedAt(rs.getString("scheduled_at"));
+                    b.setCreatedAt(rs.getString("created_at"));
+                    b.setScheduledAt(rs.getString("scheduled_at"));
                     b.setSessionTitle(rs.getString("session_title"));
                     b.setSkill(rs.getString("skill"));
                     b.setTutorName(rs.getString("tutor_name"));
@@ -94,7 +108,14 @@ public class BookingDAO {
     }
 
     public boolean updateBookingStatus(int bookingId, String status) {
-        String sql = "UPDATE bookings SET status = ? WHERE id = ?";
+        String eligible;
+        switch (status) {
+            case "confirmed": eligible = "status = 'pending'"; break;
+            case "completed": eligible = "status = 'confirmed'"; break;
+            case "cancelled": eligible = "status IN ('pending', 'confirmed')"; break;
+            default: return false;
+        }
+        String sql = "UPDATE bookings SET status = ? WHERE id = ? AND " + eligible;
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);

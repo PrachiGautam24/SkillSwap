@@ -15,22 +15,11 @@ public class RegisterFrame extends JFrame {
 
     public RegisterFrame() {
         setTitle("SkillSwap - Student Registration");
-        setSize(600, 680);
+        setSize(640, 730);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         SwingUtils.centerFrame(this);
 
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBackground(SwingUtils.BACKGROUND);
-        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 25, 20, 25));
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(6, 6, 6, 6);
-
-        JLabel header = SwingUtils.createLabel("Create Student Account", SwingUtils.TITLE_FONT, SwingUtils.PRIMARY);
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
-        formPanel.add(header, gbc);
-        gbc.gridwidth = 1;
+        FormPage page = new FormPage("Create an account");
 
         nameField = SwingUtils.createStyledTextField(18);
         emailField = SwingUtils.createStyledTextField(18);
@@ -46,21 +35,22 @@ public class RegisterFrame extends JFrame {
         skillsToLearnArea = SwingUtils.createStyledTextArea(2, 18);
         bioArea = SwingUtils.createStyledTextArea(3, 18);
 
-        int row = 1;
-        addFormRow(formPanel, gbc, row++, "Full Name *:", nameField);
-        addFormRow(formPanel, gbc, row++, "Email Address *:", emailField);
-        addFormRow(formPanel, gbc, row++, "Password *:", passwordField);
-        addFormRow(formPanel, gbc, row++, "Student ID:", studentIdField);
-        addFormRow(formPanel, gbc, row++, "Department:", departmentField);
-        addFormRow(formPanel, gbc, row++, "Semester:", semesterBox);
-        addFormRow(formPanel, gbc, row++, "Learning Mode:", learningModeBox);
-        addFormRow(formPanel, gbc, row++, "Preferred Time:", preferredTimeField);
-        addFormRow(formPanel, gbc, row++, "My Skills (comma-sep):", new JScrollPane(skillsArea));
-        addFormRow(formPanel, gbc, row++, "Skills to Learn:", new JScrollPane(skillsToLearnArea));
-        addFormRow(formPanel, gbc, row++, "Short Bio:", new JScrollPane(bioArea));
+        page.section("Account");
+        page.field("Full name *", nameField);
+        page.field("Email address *", emailField);
+        page.field("Password *", passwordField);
+        page.section("Student details");
+        page.field("Student ID", studentIdField);
+        page.field("Department", departmentField);
+        page.field("Semester", semesterBox);
+        page.section("Learning preferences");
+        page.field("Learning mode", learningModeBox);
+        page.field("Preferred time", preferredTimeField);
+        page.field("Short bio", new JScrollPane(bioArea));
+        page.section("Skills (separate with commas)");
+        page.field("I can teach", new JScrollPane(skillsArea));
+        page.field("I want to learn", new JScrollPane(skillsToLearnArea));
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        btnPanel.setOpaque(false);
         JButton backBtn = SwingUtils.createStyledButton("Back to Login", SwingUtils.CARD);
         JButton submitBtn = SwingUtils.createStyledButton("Register", SwingUtils.PRIMARY_DARK);
 
@@ -70,20 +60,9 @@ public class RegisterFrame extends JFrame {
         });
         submitBtn.addActionListener(e -> handleRegister());
 
-        btnPanel.add(backBtn);
-        btnPanel.add(submitBtn);
-
-        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2;
-        formPanel.add(btnPanel, gbc);
-
-        add(new JScrollPane(formPanel));
-    }
-
-    private void addFormRow(JPanel panel, GridBagConstraints gbc, int row, String label, Component comp) {
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
-        panel.add(SwingUtils.createLabel(label, SwingUtils.BOLD_FONT, SwingUtils.TEXT_PRIMARY), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.7;
-        panel.add(comp, gbc);
+        page.actions(backBtn, submitBtn);
+        setContentPane(page);
+        getRootPane().setDefaultButton(submitBtn);
     }
 
     private void handleRegister() {

@@ -1,3 +1,9 @@
-Download and place these two JAR files inside this lib/ folder before compiling:
-1. h2-1.4.200.jar (https://repo1.maven.org/maven2/com/h2database/h2/1.4.200/h2-1.4.200.jar)
-2. bcrypt-0.10.2.jar or jbcrypt-0.4.jar (https://repo1.maven.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4.jar)
+The desktop build loads dependency JARs from this directory.
+
+h2-1.4.200.jar is H2 version 1.4.200.
+jbcrypt-upstream.jar is a local Java 8 build of org.mindrot.jbcrypt.BCrypt.
+The upstream source and its license notice are included in the JAR.
+Source: https://github.com/djmdjm/jBCrypt/blob/master/src/org/mindrot/jbcrypt/BCrypt.java
+
+For a fresh dependency install, the corresponding Maven artifacts are
+com.h2database:h2:1.4.200 and org.mindrot:jbcrypt:0.4.
